@@ -3,14 +3,25 @@
   #include <avr/power.h>
 #endif
 
-#define PIN 6
-
-#define NUM_LEDS 60
+#define PIN_6 6
+#define PIN_7 7
+#define PIN_8 8
+#define PIN_9 9
+#define PIN_10 10
+#define PIN_11 11
+#define NUM_LEDS 15
 
 #define BRIGHTNESS 50
-
-Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUM_LEDS, PIN, NEO_GRBW + NEO_KHZ800);
-
+#define BLUE 255
+#define WHITE 16777215
+#define GREEN 65280
+#define RED 16711680
+Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUM_LEDS, PIN_6, NEO_GRBW + NEO_KHZ800);
+Adafruit_NeoPixel strip2 = Adafruit_NeoPixel(NUM_LEDS, PIN_7, NEO_GRBW + NEO_KHZ800);
+Adafruit_NeoPixel strip3 = Adafruit_NeoPixel(NUM_LEDS, PIN_8, NEO_GRBW + NEO_KHZ800);
+Adafruit_NeoPixel strip4 = Adafruit_NeoPixel(NUM_LEDS, PIN_9, NEO_GRBW + NEO_KHZ800);
+Adafruit_NeoPixel strip5 = Adafruit_NeoPixel(NUM_LEDS, PIN_10, NEO_GRBW + NEO_KHZ800);
+Adafruit_NeoPixel strip6 = Adafruit_NeoPixel(NUM_LEDS, PIN_11, NEO_GRBW + NEO_KHZ800);
 byte neopix_gamma[] = {
     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  1,  1,  1,
@@ -28,66 +39,81 @@ byte neopix_gamma[] = {
   144,146,148,150,152,154,156,158,160,162,164,167,169,171,173,175,
   177,180,182,184,186,189,191,193,196,198,200,203,205,208,210,213,
   215,218,220,223,225,228,231,233,236,239,241,244,247,249,252,255 };
-char blueToothVal;           //value sent over via bluetooth
-char lastValue;              //stores last state of device (on/off)
+String blueToothVal;           //value sent over via bluetooth
+char stringIndex;              //stores last state of device (on/off)
+char pixelIndex;              //stores which pixel is being adjusted
+char colorIndex;              //stores which color is now being set
+char brightIndex;              //stores what brightness we are setting the device to
 
 void setup() {
-  // This is for Trinket 5V 16MHz, you can remove these three lines if you are not using a Trinket
-  #if defined (__AVR_ATtiny85__)
-    if (F_CPU == 16000000) clock_prescale_set(clock_div_1);
-  #endif
-  // End of trinket special code
-  Serial.begin(9600); 
+  Serial.begin(9600);  //set Baud rate
   strip.setBrightness(BRIGHTNESS);
+  strip2.setBrightness(BRIGHTNESS);
+  strip3.setBrightness(BRIGHTNESS);
+  strip4.setBrightness(BRIGHTNESS);
+  strip5.setBrightness(BRIGHTNESS);
+  strip6.setBrightness(BRIGHTNESS);
   strip.begin();
+  strip2.begin();
+  strip3.begin();
+  strip4.begin();
+  strip5.begin();
+  strip6.begin();
   strip.show(); // Initialize all pixels to 'off'
+  strip2.show(); // Initialize all pixels to 'off'
+  strip3.show(); // Initialize all pixels to 'off'
+  strip4.show(); // Initialize all pixels to 'off'
+  strip5.show(); // Initialize all pixels to 'off'
+  strip6.show(); // Initialize all pixels to 'off'
 }
 
 void loop() {
-  if(Serial.available()>0)
+  while(Serial.available()>0)
+  {//while there is data available on the serial monitor
+    blueToothVal+=char(Serial.read());//store string from serial command
+  }
+  if(!Serial.available())
   {
-    blueToothVal=Serial.read(); //read it
+  Serial.println(blueToothVal);
+  stringIndex = blueToothVal.charAt(0);
+  pixelIndex = blueToothVal.charAt(1);
+  colorIndex = blueToothVal.charAt(2);
+  brightIndex = blueToothVal.charAt(3);
+  // Some example procedures showing how to display to the pixels:
+  if (stringIndex=='1')
+  {//if value from bluetooth serial is 1 make the LED white
+    colorWipe(strip.Color(255, 255, 255), 50); // White
+    Serial.println(F("Specific Pixel Function")); //print LED is on
+    blueToothVal=""; //clear the data
   }
-  if (blueToothVal=='r')
-  {//if value from bluetooth serial is r make the LED red
-    colorWipe(strip.Color(255, 0, 0), 50); // Red
-    //if (lastValue!='n')
-    Serial.println(F("LED is red")); //print LED is on
-    //lastValue=blueToothVal;
+  else if (stringIndex=='7')
+  {//full display
+    //so for full display I need colorIndex and brightness Index
+    colorFullDisplay(colorIndexGet(colorIndex),brightIndexGet(brightIndex),3);
+    Serial.println(F("Full Display On")); //print LED is on
+    blueToothVal=""; //clear the data
   }
-  else if (blueToothVal=='b')
-  {//if value from bluetooth serial is b make the LED blue
-    colorWipe(strip.Color(0, 0, 255), 50); // Blue
-    //if (lastValue!='f')
-    Serial.println(F("LED is blue")); //print LED is on
-    //lastValue=blueToothVal;
+  else if (stringIndex=='8')
+  {//right side of the display
+    colorRightDisplay(colorIndexGet(colorIndex),brightIndexGet(brightIndex),3);
+    Serial.println(F("Right Side of Display")); //print LED is on
+    blueToothVal=""; //clear the data
   }
-  else if (blueToothVal=='w')
-  {//if value from bluetooth serial is w make the LED White
-    colorWipe(strip.Color(255, 255, 255, 255), 50); // White
-    //if (lastValue!='f')
-    Serial.println(F("LED is white")); //print LED is on
-    //lastValue=blueToothVal;
-  } 
-  else if (blueToothVal=='g')
-  {//if value from bluetooth serial is g make the LED Green
-    colorWipe(strip.Color(0, 255, 0, 0), 50); // Green
-    //if (lastValue!='f')
-    Serial.println(F("LED is green")); //print LED is on
-    //lastValue=blueToothVal;
-  } 
-
-
-  //whiteOverRainbow(20,75,5);  
-
-  //pulseWhite(5); 
-
-  // fullWhite();
-   delay(1000);
-
-  //rainbowFade2White(3,3,1);
-
-
+  else if (stringIndex=='9')
+  {//left side of the display
+    colorLeftDisplay(colorIndexGet(colorIndex),brightIndexGet(brightIndex),3);
+    Serial.println(F("Left Side of Display")); //print LED is on
+    blueToothVal=""; //clear the data
+  }
+  else if (stringIndex=='0')
+  {//if value from bluetooth serial is 0 make the LEDs off
+    DisplayOff();
+    Serial.println(F("Entire Display Off")); //print LED is on
+    blueToothVal=""; //clear the data
+  }
+  }
+  blueToothVal=""; //clear the data
+  delay(4000);
 }
 
 // Fill the dots one after the other with a color
@@ -97,6 +123,7 @@ void colorWipe(uint32_t c, uint8_t wait) {
     strip.show();
     delay(wait);
   }
+  Serial.println(c);
 }
 
 void pulseWhite(uint8_t wait) {
@@ -288,4 +315,102 @@ uint8_t green(uint32_t c) {
 uint8_t blue(uint32_t c) {
   return (c);
 }
-
+uint32_t brightIndexGet(char bI){
+  //uint32_t j =  (bI << 3) + (bI << 1);
+  int inbetween = bI - '0';
+  uint32_t j = inbetween*10;
+  return (j);
+}
+uint32_t colorIndexGet(char cI){
+  uint32_t j = 0;
+  if(cI == 'r'){
+    j = 16711680;
+  }
+  else if(cI == 'g'){
+    j = 65280;
+  }
+  else if(cI == 'b'){
+    j = 255;
+  }
+  else if(cI == 'w'){
+    j = 16777215;
+  }
+  return (j);
+}
+// Entire Display
+void colorFullDisplay(uint32_t c, uint32_t bright, uint8_t wait) {
+    for(uint16_t i=0; i<strip.numPixels(); i++) {
+        strip.setPixelColor(i,c);
+        strip2.setPixelColor(i,c);
+        strip3.setPixelColor(i,c);
+        strip4.setPixelColor(i,c);
+        strip5.setPixelColor(i,c);
+        strip6.setPixelColor(i,c);
+    }    
+    strip.setBrightness(bright); 
+    strip.show();
+    strip2.setBrightness(bright); 
+    strip2.show();
+    strip3.setBrightness(bright); 
+    strip3.show();
+    strip4.setBrightness(bright); 
+    strip4.show();
+    strip5.setBrightness(bright); 
+    strip5.show();
+    strip6.setBrightness(bright); 
+    strip6.show();
+    delay(wait);
+}
+// Right Side of the Display
+void colorRightDisplay(uint32_t c, uint32_t bright, uint8_t wait) {
+    for(uint16_t i=0; i<strip.numPixels(); i++) {
+        strip.setPixelColor(i,c);
+        strip2.setPixelColor(i,c);
+        strip3.setPixelColor(i,c);
+    }    
+    strip.setBrightness(bright); 
+    strip.show();
+    strip2.setBrightness(bright); 
+    strip2.show();
+    strip3.setBrightness(bright); 
+    strip3.show();
+    delay(wait);
+}
+// Left Side of the Display
+void colorLeftDisplay(uint32_t c, uint32_t bright, uint8_t wait) {
+    for(uint16_t i=0; i<strip.numPixels(); i++) {
+        strip4.setPixelColor(i,c);
+        strip5.setPixelColor(i,c);
+        strip6.setPixelColor(i,c);
+    }    
+    strip4.setBrightness(bright); 
+    strip4.show();
+    strip5.setBrightness(bright); 
+    strip5.show();
+    strip6.setBrightness(bright); 
+    strip6.show();
+    delay(wait);
+}
+// Entire Display Off
+void DisplayOff() {
+    for(uint16_t i=0; i<strip.numPixels(); i++) {
+        strip.setPixelColor(i,0);
+        strip2.setPixelColor(i,0);
+        strip3.setPixelColor(i,0);
+        strip4.setPixelColor(i,0);
+        strip5.setPixelColor(i,0);
+        strip6.setPixelColor(i,0);
+    }    
+    strip.setBrightness(0); 
+    strip.show();
+    strip2.setBrightness(0); 
+    strip2.show();
+    strip3.setBrightness(0); 
+    strip3.show();
+    strip4.setBrightness(0); 
+    strip4.show();
+    strip5.setBrightness(0); 
+    strip5.show();
+    strip6.setBrightness(0); 
+    strip6.show();
+}

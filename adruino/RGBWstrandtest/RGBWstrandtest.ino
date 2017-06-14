@@ -5,7 +5,7 @@
 
 #define PIN 6
 
-#define NUM_LEDS 60
+#define NUM_LEDS 15
 
 #define BRIGHTNESS 50
 
@@ -48,14 +48,14 @@ void loop() {
   colorWipe(strip.Color(0, 0, 255), 50); // Blue
   colorWipe(strip.Color(0, 0, 0, 255), 50); // White
 
-  whiteOverRainbow(20,75,5);  
-
-  pulseWhite(5); 
-
-  // fullWhite();
-  // delay(2000);
-
-  rainbowFade2White(3,3,1);
+//  whiteOverRainbow(20,75,5);  
+//
+//  pulseWhite(5); 
+//
+//  // fullWhite();
+//  // delay(2000);
+//
+//  rainbowFade2White(3,3,1);
 
 
 }
