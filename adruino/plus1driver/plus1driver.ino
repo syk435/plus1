@@ -83,10 +83,15 @@ void loop() {
     // Some example procedures showing how to display to the pixels:
     if ((stringIndex == '1')||(stringIndex == '2')||(stringIndex == '3')||(stringIndex == '4')||(stringIndex == '5')||(stringIndex == '6'))
     { //if value from bluetooth serial is 1 make the LED white
-      stripIndexGet(stringIndex);
-      colorWipe(strip.Color(255, 255, 255), 50); // White
-      Serial.println(F("Specific Pixel Function")); //print LED is on
-      blueToothVal = ""; //clear the data
+      if(pixelIndex == 'X'){
+        colorStrip(stripIndexGet(stringIndex), colorIndexGet(colorIndex), brightIndexGet(brightIndex), 3);
+        //colorWipe(strip.Color(255, 255, 255), 50); // White        
+      }
+      else{        
+        colorPixel(stripIndexGet(stringIndex),cubeIndexGet(stripIndexGet(stringIndex)), colorIndexGet(colorIndex), brightIndexGet(brightIndex), 3);
+        Serial.println(F("Specific LED Function")); //print LED is on
+        blueToothVal = ""; //clear the data
+      }      
     }
     else if (stringIndex == '7')
     { //full display
@@ -115,7 +120,7 @@ void loop() {
     }
   }
   blueToothVal = ""; //clear the data
-  delay(4000);
+  delay(200);
 }
 
 // Fill the dots one after the other with a color
@@ -187,7 +192,7 @@ void rainbowFade2White(uint8_t wait, int rainbowLoops, int whiteLoops) {
 
 
 
-  delay(500);
+  delay(100);
 
 
   for (int k = 0 ; k < whiteLoops ; k ++) {
@@ -210,7 +215,7 @@ void rainbowFade2White(uint8_t wait, int rainbowLoops, int whiteLoops) {
     }
   }
 
-  delay(500);
+  delay(100);
 
 
 }
@@ -338,7 +343,7 @@ uint32_t colorIndexGet(char cI) {
   }
   return (j);
 }
-uint16_t pixelIndexGet(char pI){
+uint16_t cubeIndexGet(char pI){
   uint16_t q = 0;
   if(pI =='A'){
     q = 0;
@@ -508,6 +513,52 @@ void colorPixel(uint32_t stripNumber, uint16_t p, uint32_t c, uint32_t bright, u
   else if(stripNumber == 6){
     strip6.setBrightness(bright);
     strip6.show();
+  }
+  delay(wait);
+}
+// Individiual Strips
+void colorStrip(uint32_t s, uint32_t c, uint32_t bright, uint8_t wait) {
+  if(s == 1){
+    for (uint16_t i = 0; i < strip.numPixels(); i++) {
+      strip.setPixelColor(i, c);
+    }
+    strip.setBrightness(bright);
+    strip.show();
+  }
+  else if(s == 2){
+    for (uint16_t i = 0; i < strip.numPixels(); i++) {
+      strip2.setPixelColor(i, c);
+    }
+    strip2.setBrightness(bright);
+    strip2.show();  
+  }
+  else if (s == 3){
+    for (uint16_t i = 0; i < strip.numPixels(); i++) {
+      strip3.setPixelColor(i, c);
+    }
+    strip3.setBrightness(bright);
+    strip3.show();  
+  }
+  else if(s == 4){
+    for (uint16_t i = 0; i < strip.numPixels(); i++) {
+      strip4.setPixelColor(i, c);
+    }
+    strip4.setBrightness(bright);
+    strip4.show();  
+  }
+  else if(s == 5){
+    for (uint16_t i = 0; i < strip.numPixels(); i++) {
+      strip5.setPixelColor(i, c);
+    }
+    strip5.setBrightness(bright);
+    strip5.show();  
+  }
+  else if(s == 6){
+    for (uint16_t i = 0; i < strip.numPixels(); i++) {
+      strip6.setPixelColor(i, c);
+    }
+    strip6.setBrightness(bright);
+    strip6.show();  
   }
   delay(wait);
 }

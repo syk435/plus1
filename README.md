@@ -6,7 +6,7 @@ So you send a command to the Arduino via serial Bluetooth (COM#) and make sure i
 
 # Configuration
 STRIP - CUBE NUMBER IN STRIP - COLOR TO SET/Brightness
-1	A-J	r/g/b/w/p	3-9
+1	A-J	r/g/b/w/p	0-9
 2	A-J	r/g/b/w/p	0-9
 3	A-J	r/g/b/w/p	0-9
 4	A-J	r/g/b/w/p	0-9
@@ -16,7 +16,7 @@ STRIP - CUBE NUMBER IN STRIP - COLOR TO SET/Brightness
 8	NA	r/g/b/w/p	0-9
 9	NA	r/g/b/w/p	0-9
 0	NA	NA			NA
-
+1-6 X   r/g/b/w/p  	0-9
 # Example commands:
 1Ag5 = would set the "A" Led in strip 1 to Green. Brightness at 50%
 5Jw2 = would set the "J" Led in strip 5 to White. Brightness at 20%
@@ -30,3 +30,6 @@ STRIP - CUBE NUMBER IN STRIP - COLOR TO SET/Brightness
 0Cr6 = sets the entire display off
 0Fb4 = turns the entire display off
 0Zz3 = turns the entire display off
+1Xr3 = turns the entire 1st strip to red. Brightness at 30%
+5Xg8 = turns the entire 5th strip to green. Brightness at 80%
+3Xw5 = turns the entire 3rd strip to white. Brightness at 50%
