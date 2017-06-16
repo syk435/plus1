@@ -1,6 +1,12 @@
 import cv2
 import numpy as np
 import imutils
+import bluetooth
+import time
+# import pykinect2
+# from pykinect2 import PyKinectV2
+# from pykinect2.PyKinectV2 import *
+# from pykinect2 import PyKinectRuntime
 
 def get_init_largest_rect(rects):
     maxSize = 0
@@ -46,6 +52,16 @@ def get_intersect_rect(r, rects):
         return None
 
 def get_strip(r, framewidth):
+    rx, ry, rw, rh = r
+    sect_len = int(framewidth/6)
+    return int(rx/sect_len)+1
+
+def heartbeat():
+    #pulse brightness by timer e.g. 1Ar9 then 1Ar2
+    pass
+
+def transition_brightness():
+    #dim brightness and start brightness of next b/w frames analyzed
     pass
 
 def inside(r, q):
@@ -54,7 +70,7 @@ def inside(r, q):
     return rx > qx and ry > qy and rx + rw < qx + qw and ry + rh < qy + qh
 
 
-def draw_detections(found_init_rect, img, rects, prevRect=None, intersectRect=None, stasis=False, thickness=1):
+def draw_detections(found_init_rect, img, rects, start_time, prevSect, prevRect=None, intersectRect=None, stasis=False, framewidth=0, thickness=1):
     currRect = None
     if stasis==False:
         if found_init_rect:
@@ -67,6 +83,15 @@ def draw_detections(found_init_rect, img, rects, prevRect=None, intersectRect=No
                 rects = inter_rects
                 intersectRect = rects[1]
                 #FLASH WHITE
+                try:
+                    sock=bluetooth.BluetoothSocket( bluetooth.RFCOMM )
+                    sock.connect((target_address, port))
+                    sock.send("7Ab")
+                    print "FLASH"
+                    sock.close()
+                    start_time = time.time()
+                except:
+                    pass
         else:
             rects = get_init_largest_rect(rects)
             if rects is not None:
@@ -78,16 +103,54 @@ def draw_detections(found_init_rect, img, rects, prevRect=None, intersectRect=No
         for x, y, w, h in rects:
             pad_w, pad_h = int(0.15*w), int(0.05*h)
             cv2.rectangle(img, (x+pad_w, y+pad_h), (x+w-pad_w, y+h-pad_h), (0, 255, 0), thickness)
+            elapsed_time = time.time() - start_time
+            #print elapsed_time
+            #light up strip as person walks by, turn off prev lit strip
+            if elapsed_time>0.25 and stasis==False:
+                try:
+                    currSect = str(get_strip(rects[0],framewidth))
+                    if currSect != prevSect:
+                        sock=bluetooth.BluetoothSocket( bluetooth.RFCOMM )
+                        sock.connect((target_address, port))
+                        sock.send(prevSect + "A" + "w")
+                        print "prev sect off"
+                        sock.close()
+
+                        time.sleep(0.25)
+
+                    sock=bluetooth.BluetoothSocket( bluetooth.RFCOMM )
+                    sock.connect((target_address, port))
+                    sock.send(currSect + "A" + "r")
+                    print currSect + " on"
+                    sock.close()
+
+                    start_time = time.time()
+
+                    prevSect = currSect
+                except:
+                    pass
 
         currRect = rects[0]
-    return found_init_rect,currRect,intersectRect,stasis
+    return found_init_rect,currRect,intersectRect,stasis,start_time,prevSect
 
 
 #------ MAIN ------------------------------------------------------------------------
 
+target_name = "HC-06"
+target_address = None
+
+nearby_devices = bluetooth.discover_devices()
+
+for bdaddr in nearby_devices:
+    if target_name == bluetooth.lookup_name( bdaddr ):
+        target_address = bdaddr
+        break
+port = 1
+
 hog = cv2.HOGDescriptor()
 hog.setSVMDetector( cv2.HOGDescriptor_getDefaultPeopleDetector() )
-cap = cv2.VideoCapture('./sample data/test3.mp4')
+#cap = cv2.VideoCapture('./sample data/test3.mp4')
+cap = cv2.VideoCapture(1)
 count = 0
 #if found, flash white and freeze on drawn for a bit. then clear and grab new one
 found_init_rect = False
@@ -95,6 +158,18 @@ found_count = -1
 stasis = False
 prevRect = None
 intersectRect = None
+start_time = 0
+try:
+    sock=bluetooth.BluetoothSocket( bluetooth.RFCOMM )
+    sock.connect((target_address, port))
+    sock.send("7Aw")
+    sock.close()
+    start_time = time.time()
+except:
+    pass
+time.sleep(0.5)
+start_time = time.time()
+prevSect = '1'
 
 while cap.isOpened():# and count < 100:
     ret,img = cap.read()
@@ -112,8 +187,16 @@ while cap.isOpened():# and count < 100:
             stasis = False
             found_count = -1
             intersectRect = None
+            try:
+                sock=bluetooth.BluetoothSocket( bluetooth.RFCOMM )
+                sock.connect((target_address, port))
+                sock.send("7Aw")
+                sock.close()
+                start_time = time.time()
+            except:
+                pass
 
-        found_init_rect,prevRect,intersectRect,stasis = draw_detections(found_init_rect,img,found,prevRect,intersectRect,stasis)
+        found_init_rect,prevRect,intersectRect,stasis,start_time,prevSect = draw_detections(found_init_rect,img,found,start_time,prevSect,prevRect,intersectRect,stasis,framewidth)
         cv2.imshow('Person detection',img)
 
         count = count + 1
@@ -125,3 +208,55 @@ while cap.isOpened():# and count < 100:
 
 cap.release()
 cv2.destroyAllWindows()
+
+#-----------------------KINECT-----------------------------------------
+#NEW PLAN: launch c++ in parallel to write images to file in folder, delete after x secs, and imread python
+
+# from cv2 import VideoWriter as writer
+# from cv2 import VideoWriter_fourcc
+# kinect = PyKinectRuntime.PyKinectRuntime(PyKinectV2.FrameSourceTypes_Color | PyKinectV2.FrameSourceTypes_Body | PyKinectV2.FrameSourceTypes_Body )
+# fourcc = VideoWriter_fourcc(*"XVID")
+# data = writer('x.avi', fourcc, 30.0, (1920,1080))
+# count = 0
+# while count < 20:
+#     if kinect.has_new_color_frame():
+#         frame = kinect.get_last_color_frame()
+#         width = kinect.color_frame_desc.Width
+#         height = kinect.color_frame_desc.Height
+#         #data.write(frame.data())
+#         if frame.data() is not None:
+#             print frame.data()
+#         count+=1
+#         #print 'Width: ', width, 'Height', height
+#         #cv2.imshow('kinect v2', frame.reshape(height*width,4))
+
+# kinect.close()
+# data.release()
+
+# if __name__ == "__main__":
+
+#     # Import package
+
+#     import PyKinectTk
+
+#     # Create connection to Kinect Service
+
+#     App = PyKinectTk.Capture.KinectService(timeout=2)
+
+#     # Start capturing data using auto-click
+
+#     print "Listening for Kinect data"
+    
+#     App.listen(getVideo=True, Clicking=True)
+
+#     # Add a meaningful name to the recording
+    
+#     name = raw_input("Would you like to name your recording? ")
+
+#     App.NameRecording(name)
+
+#     # Exit
+
+#     raw_input("Recording saved as '%s', press Return to quit" % name)
+
+#     App.close()
