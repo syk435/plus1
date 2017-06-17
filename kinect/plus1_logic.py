@@ -1,8 +1,13 @@
+from __future__ import print_function
 import cv2
+from threading import Thread
+
 import numpy as np
 import imutils
+from imutils.video import WebcamVideoStream
 import bluetooth
 import time
+
 # import pykinect2
 # from pykinect2 import PyKinectV2
 # from pykinect2.PyKinectV2 import *
@@ -54,15 +59,22 @@ def get_intersect_rect(r, rects):
 def get_strip(r, framewidth):
     rx, ry, rw, rh = r
     sect_len = int(framewidth/6)
-    return int(rx/sect_len)+1
+    return 7-(int(rx/sect_len)+1)
 
 def heartbeat():
     #pulse brightness by timer e.g. 1Ar9 then 1Ar2
     pass
 
-def transition_brightness():
-    #dim brightness and start brightness of next b/w frames analyzed
-    pass
+def transition(sock,prev,curr):
+    try:
+        sock.send(prev+"Xr1")
+        time.sleep(0.14)
+        sock.send(prev+"Xg3")
+        time.sleep(0.14)
+        sock.send(curr+"Xr3")
+        time.sleep(0.14)
+    except:
+        pass
 
 def inside(r, q):
     rx, ry, rw, rh = r
@@ -70,7 +82,7 @@ def inside(r, q):
     return rx > qx and ry > qy and rx + rw < qx + qw and ry + rh < qy + qh
 
 
-def draw_detections(found_init_rect, img, rects, start_time, prevSect, prevRect=None, intersectRect=None, stasis=False, framewidth=0, thickness=1):
+def draw_detections(sock,found_init_rect, img, rects, start_time, prevSect, prevRect=None, intersectRect=None, stasis=False, framewidth=0, thickness=1):
     currRect = None
     if stasis==False:
         if found_init_rect:
@@ -84,11 +96,9 @@ def draw_detections(found_init_rect, img, rects, start_time, prevSect, prevRect=
                 intersectRect = rects[1]
                 #FLASH WHITE
                 try:
-                    sock=bluetooth.BluetoothSocket( bluetooth.RFCOMM )
-                    sock.connect((target_address, port))
-                    sock.send("7Ab")
-                    print "FLASH"
-                    sock.close()
+                    sock.send("7Xb3")
+                    print("FLASH")
+                    time.sleep(0.25)
                     start_time = time.time()
                 except:
                     pass
@@ -110,20 +120,9 @@ def draw_detections(found_init_rect, img, rects, start_time, prevSect, prevRect=
                 try:
                     currSect = str(get_strip(rects[0],framewidth))
                     if currSect != prevSect:
-                        sock=bluetooth.BluetoothSocket( bluetooth.RFCOMM )
-                        sock.connect((target_address, port))
-                        sock.send(prevSect + "A" + "w")
-                        print "prev sect off"
-                        sock.close()
-
-                        time.sleep(0.25)
-
-                    sock=bluetooth.BluetoothSocket( bluetooth.RFCOMM )
-                    sock.connect((target_address, port))
-                    sock.send(currSect + "A" + "r")
-                    print currSect + " on"
-                    sock.close()
-
+                        transition(sock,prevSect,currSect)
+                    sock.send(currSect + "X" + "r8")
+                 
                     start_time = time.time()
 
                     prevSect = currSect
@@ -149,8 +148,9 @@ port = 1
 
 hog = cv2.HOGDescriptor()
 hog.setSVMDetector( cv2.HOGDescriptor_getDefaultPeopleDetector() )
-#cap = cv2.VideoCapture('./sample data/test3.mp4')
-cap = cv2.VideoCapture(1)
+#cap = cv2.VideoCapture('./sample data/test4.mp4')
+cap = WebcamVideoStream(src=1).start()
+
 count = 0
 #if found, flash white and freeze on drawn for a bit. then clear and grab new one
 found_init_rect = False
@@ -159,20 +159,24 @@ stasis = False
 prevRect = None
 intersectRect = None
 start_time = 0
+sock = None
+
 try:
     sock=bluetooth.BluetoothSocket( bluetooth.RFCOMM )
     sock.connect((target_address, port))
-    sock.send("7Aw")
-    sock.close()
+    sock.send("7Xg3")
     start_time = time.time()
 except:
     pass
-time.sleep(0.5)
+
+time.sleep(0.25)
 start_time = time.time()
 prevSect = '1'
+socket_set_time = time.time()
 
-while cap.isOpened():# and count < 100:
-    ret,img = cap.read()
+while True:
+    #ret,img = cap.read()
+    img = cap.read()
     if (type(img) == type(None)):
         break
     else:
@@ -188,26 +192,28 @@ while cap.isOpened():# and count < 100:
             found_count = -1
             intersectRect = None
             try:
-                sock=bluetooth.BluetoothSocket( bluetooth.RFCOMM )
-                sock.connect((target_address, port))
-                sock.send("7Aw")
-                sock.close()
+                sock.send("7Xg5")
                 start_time = time.time()
             except:
                 pass
-
-        found_init_rect,prevRect,intersectRect,stasis,start_time,prevSect = draw_detections(found_init_rect,img,found,start_time,prevSect,prevRect,intersectRect,stasis,framewidth)
-        cv2.imshow('Person detection',img)
+        eval_time = time.time()
+        found_init_rect,prevRect,intersectRect,stasis,start_time,prevSect = draw_detections(sock,found_init_rect,img,found,start_time,prevSect,prevRect,intersectRect,stasis,framewidth)
+        eval_time = time.time() - eval_time
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        cv2.putText(img,str(eval_time),(10,25), font, 1,(255,255,255),2)
+        #cv2.putText(img,str(other_time),(10,45), font, 1,(255,255,255),2)
+        cv2.imshow("Frame", img)
 
         count = count + 1
         if stasis == True and found_count==-1:
             found_count = count
-    if cv2.waitKey(10) & 0xFF == ord('q'):
-        break
+
+    key = cv2.waitKey(1) & 0xFF
 
 
-cap.release()
+cap.stop()
 cv2.destroyAllWindows()
+sock.close()
 
 #-----------------------KINECT-----------------------------------------
 #NEW PLAN: launch c++ in parallel to write images to file in folder, delete after x secs, and imread python
