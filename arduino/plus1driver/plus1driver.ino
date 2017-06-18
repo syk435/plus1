@@ -10,18 +10,23 @@
 #define PIN_10 10
 #define PIN_11 11
 #define NUM_LEDS 15
-
 #define BRIGHTNESS 50
+
+//the integer values of the colors. To add more colors just convert from R,G,B to ints
 #define BLUE 255
 #define WHITE 16777215
 #define GREEN 65280
 #define RED 16711680
-Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUM_LEDS, PIN_6, NEO_GRBW + NEO_KHZ800);
-Adafruit_NeoPixel strip2 = Adafruit_NeoPixel(NUM_LEDS, PIN_7, NEO_GRBW + NEO_KHZ800);
-Adafruit_NeoPixel strip3 = Adafruit_NeoPixel(NUM_LEDS, PIN_8, NEO_GRBW + NEO_KHZ800);
-Adafruit_NeoPixel strip4 = Adafruit_NeoPixel(NUM_LEDS, PIN_9, NEO_GRBW + NEO_KHZ800);
-Adafruit_NeoPixel strip5 = Adafruit_NeoPixel(NUM_LEDS, PIN_10, NEO_GRBW + NEO_KHZ800);
-Adafruit_NeoPixel strip6 = Adafruit_NeoPixel(NUM_LEDS, PIN_11, NEO_GRBW + NEO_KHZ800);
+
+//to control the six unique strips
+
+Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUM_LEDS, PIN_6, NEO_RGB + NEO_KHZ800);
+Adafruit_NeoPixel strip2 = Adafruit_NeoPixel(NUM_LEDS, PIN_7,NEO_RGB + NEO_KHZ800);
+Adafruit_NeoPixel strip3 = Adafruit_NeoPixel(NUM_LEDS, PIN_8,NEO_RGB + NEO_KHZ800);
+Adafruit_NeoPixel strip4 = Adafruit_NeoPixel(NUM_LEDS, PIN_9,NEO_RGB + NEO_KHZ800);
+Adafruit_NeoPixel strip5 = Adafruit_NeoPixel(NUM_LEDS, PIN_10,NEO_RGB + NEO_KHZ800);
+Adafruit_NeoPixel strip6 = Adafruit_NeoPixel(NUM_LEDS, PIN_11,NEO_RGB + NEO_KHZ800);
+
 byte neopix_gamma[] = {
   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  1,  1,  1,
@@ -48,6 +53,7 @@ char brightIndex;              //stores what brightness we are setting the devic
 
 void setup() {
   Serial.begin(9600);  //set Baud rate
+  //sets the default brightness to 50%
   strip.setBrightness(BRIGHTNESS);
   strip2.setBrightness(BRIGHTNESS);
   strip3.setBrightness(BRIGHTNESS);
@@ -76,18 +82,20 @@ void loop() {
   if (!Serial.available())
   {
     Serial.println(blueToothVal);
+    //deconstructs a message in the format 2Ag9 which is String|LEDCube|RGB Color|Brightness
     stringIndex = blueToothVal.charAt(0);
     pixelIndex = blueToothVal.charAt(1);
     colorIndex = blueToothVal.charAt(2);
     brightIndex = blueToothVal.charAt(3);
-    // Some example procedures showing how to display to the pixels:
+    //if referencing the first 6 strings, go into this block
     if ((stringIndex == '1')||(stringIndex == '2')||(stringIndex == '3')||(stringIndex == '4')||(stringIndex == '5')||(stringIndex == '6'))
-    { //if value from bluetooth serial is 1 make the LED white
+    { //if pixel Index is X, then light up the entire string
       if(pixelIndex == 'X'){
         colorStrip(stripIndexGet(stringIndex), colorIndexGet(colorIndex), brightIndexGet(brightIndex), 3);
         //colorWipe(strip.Color(255, 255, 255), 50); // White        
       }
-      else{        
+      else{     
+        //else light up individual LED Cubes   
         colorPixel(stripIndexGet(stringIndex),cubeIndexGet(stripIndexGet(stringIndex)), colorIndexGet(colorIndex), brightIndexGet(brightIndex), 3);
         Serial.println(F("Specific LED Function")); //print LED is on
         blueToothVal = ""; //clear the data
@@ -120,7 +128,7 @@ void loop() {
     }
   }
   blueToothVal = ""; //clear the data
-  delay(200);
+  delay(50);//50 milisecond delay in between data grabs
 }
 
 // Fill the dots one after the other with a color
