@@ -1,5 +1,7 @@
 # plus1
-Interactive art to connect people
+Interactive art to connect people. The way the display works is by using OpenCV to recognize people as they walk by the display. After recognizing two different indivdiuals crossing paths the entire display lights up and simulates a heart beating. This is to catch peoples attention and promote conversation between them!
+</br>
+![alt text](https://github.com/syk435/plus1/blob/master/images/20170617_211141.jpg)
 
 ## HOW THE ARDUINO DRIVER WORKS
 So you send a command to the Arduino via serial Bluetooth (COM#) and make sure it reads every 50 milliseconds. The command is  in the following SYNTAX. This is with 1-6 being the strips, 7 being the entire display, 8 being the right half and 9 being the left half.
