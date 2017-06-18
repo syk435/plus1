@@ -47,7 +47,7 @@ def get_intersect_rect(r, rects):
     rx, ry, rw, rh = r
     for q in rects:
         qx, qy, qw, qh = q
-        if (qx>rx and qx<(rx+rw) and abs(qy-ry)<4) or (rx>qx and rx<(qx+qw) and abs(qy-ry)<4):
+        if (qx>rx and qx<(rx+rw)) or (rx>qx and rx<(qx+qw)):
             intersect_rect = q
             found = True
 
@@ -61,9 +61,35 @@ def get_strip(r, framewidth):
     sect_len = int(framewidth/6)
     return 7-(int(rx/sect_len)+1)
 
-def heartbeat():
-    #pulse brightness by timer e.g. 1Ar9 then 1Ar2
-    pass
+def heartbeat(sock):
+    try:
+        sock.send("8Ag1")
+        time.sleep(0.14)
+        sock.send("8Ag2")
+        time.sleep(0.14)
+        sock.send("8Ag3")
+        time.sleep(0.14)
+        sock.send("8Ag3")
+        time.sleep(0.14)
+        sock.send("8Ag2")
+        time.sleep(0.14)
+        sock.send("8Ag1")
+        time.sleep(0.14)
+
+        sock.send("9Ab1")
+        time.sleep(0.14)
+        sock.send("9Ab2")
+        time.sleep(0.14)
+        sock.send("9Ab3")
+        time.sleep(0.14)
+        sock.send("9Ab3")
+        time.sleep(0.14)
+        sock.send("9Ab2")
+        time.sleep(0.14)
+        sock.send("9Ab1")
+        time.sleep(0.14)
+    except:
+        pass
 
 def transition(sock,prev,curr):
     try:
@@ -75,6 +101,16 @@ def transition(sock,prev,curr):
         time.sleep(0.14)
     except:
         pass
+
+def plus1(sock):
+    sock.send("7Ar1")
+    time.sleep(0.8)
+    sock.send("1Xb3")
+    time.sleep(0.8)
+    sock.send("7Ar1")
+    time.sleep(0.8)
+    sock.send("4Xb3")
+    time.sleep(0.8)
 
 def inside(r, q):
     rx, ry, rw, rh = r
@@ -96,9 +132,12 @@ def draw_detections(sock,found_init_rect, img, rects, start_time, prevSect, prev
                 intersectRect = rects[1]
                 #FLASH WHITE
                 try:
-                    sock.send("7Xb3")
-                    print("FLASH")
-                    time.sleep(0.25)
+                    heartbeat(sock)
+                    heartbeat(sock)
+                    heartbeat(sock)
+                    heartbeat(sock)
+                    heartbeat(sock)
+                    time.sleep(0.15)
                     start_time = time.time()
                 except:
                     pass
@@ -116,12 +155,22 @@ def draw_detections(sock,found_init_rect, img, rects, start_time, prevSect, prev
             elapsed_time = time.time() - start_time
             #print elapsed_time
             #light up strip as person walks by, turn off prev lit strip
-            if elapsed_time>0.25 and stasis==False:
+            if elapsed_time>0.15 and stasis==False:
                 try:
                     currSect = str(get_strip(rects[0],framewidth))
                     if currSect != prevSect:
                         transition(sock,prevSect,currSect)
-                    sock.send(currSect + "X" + "r8")
+
+                    if np.rint(time.time())%10==0:
+                        if np.rint(time.time())%200==0:
+                            plus1(sock)
+                            plus1(sock)
+                            plus1(sock)
+                            plus1(sock)
+                            plus1(sock)
+                        sock.send("7Xg3")
+                        time.sleep(0.14)
+                    sock.send(currSect + "X" + "r3")
                  
                     start_time = time.time()
 
@@ -169,7 +218,7 @@ try:
 except:
     pass
 
-time.sleep(0.25)
+time.sleep(0.15)
 start_time = time.time()
 prevSect = '1'
 socket_set_time = time.time()
@@ -187,21 +236,20 @@ while True:
         (found, weights) = hog.detectMultiScale(img, winStride=(4, 4),
     		padding=(8, 8), scale=1.05)
         
-        if stasis==True and count-found_count>50:
+        if stasis==True and count-found_count>1:
             stasis = False
             found_count = -1
             intersectRect = None
             try:
-                sock.send("7Xg5")
+                sock.send("7Xg3")
                 start_time = time.time()
             except:
                 pass
-        eval_time = time.time()
+        #eval_time = time.time()
         found_init_rect,prevRect,intersectRect,stasis,start_time,prevSect = draw_detections(sock,found_init_rect,img,found,start_time,prevSect,prevRect,intersectRect,stasis,framewidth)
-        eval_time = time.time() - eval_time
-        font = cv2.FONT_HERSHEY_SIMPLEX
-        cv2.putText(img,str(eval_time),(10,25), font, 1,(255,255,255),2)
-        #cv2.putText(img,str(other_time),(10,45), font, 1,(255,255,255),2)
+        #eval_time = time.time() - eval_time
+        #font = cv2.FONT_HERSHEY_SIMPLEX
+        #cv2.putText(img,str(eval_time),(10,25), font, 1,(255,255,255),2)
         cv2.imshow("Frame", img)
 
         count = count + 1

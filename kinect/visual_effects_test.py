@@ -23,6 +23,16 @@ def init():
     time.sleep(0.25)
     return sock
 
+def plus1(sock):
+    sock.send("7Ar1")
+    time.sleep(0.8)
+    sock.send("1Xb6")
+    time.sleep(0.8)
+    sock.send("7Ar1")
+    time.sleep(0.8)
+    sock.send("4Xb6")
+    time.sleep(0.8)
+
 def heartbeat(sock):
     try:
         sock.send("8Ag1")
@@ -99,16 +109,19 @@ try:
     #     time.sleep(1)
     #     # transition(sock,prevSect,currSect)
 
-    sock.send("8Ag1")
-    time.sleep(0.14)
-    sock.send("9Ab1")
-    time.sleep(0.14)
+    # sock.send("8Ag1")
+    # time.sleep(0.14)
+    # sock.send("9Ab1")
+    # time.sleep(0.14)
+    # while True:
+    #     heartbeat(sock)
+    #     heartbeat(sock)
+    #     heartbeat(sock)
+    #     heartbeat(sock)
+    #     heartbeat(sock)
+
     while True:
-        heartbeat(sock)
-        heartbeat(sock)
-        heartbeat(sock)
-        heartbeat(sock)
-        heartbeat(sock)
+        plus1(sock)
 except:
     pass
 finally:
